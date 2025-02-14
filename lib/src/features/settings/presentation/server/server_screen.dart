@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../constants/endpoints.dart';
+import '../../../../server_manager/server_manager.dart';
 import '../../../../utils/extensions/custom_extensions.dart';
 import '../../../../utils/launch_url_in_web.dart';
 import '../../../../utils/misc/toast/toast.dart';
@@ -41,6 +42,20 @@ class ServerScreen extends ConsumerWidget {
           ),
           child: ListView(
             children: [
+              ExpansionTile(
+                title: Text('Server Management By ${context.l10n.appTitle}'),
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.start_rounded),
+                    title: Text(context.l10n.start),
+                    onTap: () async {
+                      final SuwayomiServerManager serverManager =
+                          SuwayomiServerManager();
+                      await serverManager.installOrUpdate();
+                    },
+                  ),
+                ],
+              ),
               const ClientSection(),
               const AuthenticationSection(),
               if (!kIsWeb)

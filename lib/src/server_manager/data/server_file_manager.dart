@@ -1,13 +1,7 @@
-import 'dart:io';
-
-import 'package:path/path.dart' as path;
-
-import '../utils/misc/downloader/file_downloader.dart';
-import 'model/gh_release_model.dart';
-import 'server_manager.dart';
+part of 'server_manager.dart';
 
 class ServerFileManager {
-  late SuwayomiServerType _type;
+  late ServerType _type;
   late Directory _permissibleDirectory;
 
   Directory get serverDirectory => Directory(path.join(
@@ -26,8 +20,14 @@ class ServerFileManager {
         _type.versionFileName,
       ));
 
+  bool get isServerAvailable =>
+      _permissibleDirectory.existsSync() &&
+      serverDirectory.existsSync() &&
+      serverFile.existsSync() &&
+      serverVersionFile.existsSync();
+
   ServerFileManager({
-    required SuwayomiServerType type,
+    required ServerType type,
     required Directory permissibleDirectory,
   }) {
     _type = type;
@@ -69,6 +69,8 @@ class ServerFileManager {
     required String url,
     Function(double)? onProgress,
   }) async {
+    logger.d('downloadServerFile url: $url');
+    logger.d('downloadServerFile savePath: ${serverFile.path}');
     await FileDownloader().downloadFile(
       url: url,
       onProgress: onProgress,

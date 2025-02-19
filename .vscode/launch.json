@@ -10,6 +10,12 @@
             "type": "dart"
         },
         {
+            "name": "tachidesk_sorayomi (debug mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug"
+        },
+        {
             "name": "tachidesk_sorayomi (profile mode)",
             "request": "launch",
             "type": "dart",

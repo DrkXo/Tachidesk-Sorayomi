@@ -5,10 +5,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:process/process.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:rxdart/rxdart.dart';
 
-import '../../../utils/misc/downloader/file_downloader.dart';
 import '../../data/model/gh_release_model.dart';
+import '../../data/model/server_manager_errors.dart';
 import '../../data/server_manager_utils.dart';
 
 part 'server_manager_controller.g.dart';
@@ -25,6 +24,10 @@ Future<Directory> serverDirectory(Ref ref) async =>
 class SorayomiServerManagerNotifier extends _$SorayomiServerManagerNotifier {
   final ProcessManager _processManager = LocalProcessManager();
   late ServerManagerUtils _serverManagerUtils;
+  bool isPlatformSupported =
+      Platform.isLinux || Platform.isWindows || Platform.isMacOS;
+
+  bool isServerInstalled() => _serverManagerUtils.isServerAvailable;
 
   StreamSubscription<List<bool>>? _isReadySubscription;
   String? _processId;
@@ -39,42 +42,29 @@ class SorayomiServerManagerNotifier extends _$SorayomiServerManagerNotifier {
       type: suwayomiServerType,
       permissibleDirectory: permissibleDirectory,
     );
-
-    return _initialize();
+    return await _inIt();
   }
 
-  Future<SorayomiServerState> _initialize() async {
-    state = AsyncData(SorayomiServerState.initializing());
-    _isReadyListener();
-    return SorayomiServerState.initializing();
-  }
-
-  void _isReadyListener() {
-    _isReadySubscription?.cancel();
-    _isReadySubscription = CombineLatestStream.list<bool>([
-      Stream.value(Platform.isLinux || Platform.isWindows || Platform.isMacOS),
-      _isJavaInstalled,
-      Stream.value(_serverManagerUtils.isServerAvailable),
-    ]).listen(
-      (onData) async {
-        final isReady = onData.every((element) => element);
-        if (isReady) {
+  Future<SorayomiServerState> _inIt() async {
+    if (isPlatformSupported) {
+      if (await _isJavaInstalled) {
+        if (_serverManagerUtils.isServerAvailable) {
           final pid = await _isProcessRunning();
           _processId = pid;
           if (_processId != null) {
-            state = AsyncData(SorayomiServerState.running(_processId));
+            return SorayomiServerState.running(_processId!);
           } else {
-            state = AsyncData(SorayomiServerState.ready(null));
+            return SorayomiServerState.ready(null);
           }
+        } else {
+          throw ServerManagerErrors.serverInstalationNotAvailable;
         }
-      },
-      onError: (error, stackTrace) {
-        logger.e(
-          error,
-        );
-        state = AsyncError(error, stackTrace);
-      },
-    );
+      } else {
+        throw ServerManagerErrors.javaNotInstalled;
+      }
+    } else {
+      throw ServerManagerErrors.platformNotSupported;
+    }
   }
 
   Future<String?> start({
@@ -103,7 +93,7 @@ class SorayomiServerManagerNotifier extends _$SorayomiServerManagerNotifier {
       );
 
       _processId = process.pid.toString();
-      state = AsyncData(SorayomiServerState.running(_processId));
+      state = AsyncData(SorayomiServerState.running(_processId!));
       return _processId;
     } catch (e, stackTrace) {
       state = AsyncError('Failed to start process: $e', stackTrace);
@@ -133,11 +123,12 @@ class SorayomiServerManagerNotifier extends _$SorayomiServerManagerNotifier {
   Future<void> installOrUpdate({
     GhReleaseModel? release,
     dynamic Function(double)? onProgress,
-  }) {
-    return _serverManagerUtils.installOrUpdate(
+  }) async {
+    await _serverManagerUtils.installOrUpdate(
       release: release,
       onProgress: onProgress,
     );
+    ref.invalidateSelf();
   }
 
   Future<String?> _isProcessRunning() async {
@@ -167,12 +158,12 @@ class SorayomiServerManagerNotifier extends _$SorayomiServerManagerNotifier {
     }
   }
 
-  Stream<bool> get _isJavaInstalled async* {
+  Future<bool> get _isJavaInstalled async {
     try {
       final result = await _processManager.run(['java', '-version']);
-      yield result.exitCode == 0;
+      return result.exitCode == 0;
     } catch (_) {
-      yield false;
+      return false;
     }
   }
 

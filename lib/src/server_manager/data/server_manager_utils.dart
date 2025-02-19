@@ -50,33 +50,23 @@ enum ServerType {
 }
 
 class SorayomiServerState {
-  final bool isInitializing;
   final bool isReady;
   final bool isRunning;
   final String? processId;
 
   SorayomiServerState({
-    required this.isInitializing,
     required this.isReady,
     required this.isRunning,
     this.processId,
   });
 
-  factory SorayomiServerState.initializing() => SorayomiServerState(
-        isInitializing: true,
-        isReady: false,
-        isRunning: false,
-      );
-
   factory SorayomiServerState.ready(String? processId) => SorayomiServerState(
-        isInitializing: false,
         isReady: true,
         isRunning: false,
         processId: processId,
       );
 
-  factory SorayomiServerState.running(String? processId) => SorayomiServerState(
-        isInitializing: false,
+  factory SorayomiServerState.running(String processId) => SorayomiServerState(
         isReady: true,
         isRunning: true,
         processId: processId,

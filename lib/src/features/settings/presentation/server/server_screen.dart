@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../constants/endpoints.dart';
+import '../../../../server_manager/presentation/widgets/server_manager_section.dart';
 import '../../../../utils/extensions/custom_extensions.dart';
 import '../../../../utils/launch_url_in_web.dart';
 import '../../../../utils/misc/toast/toast.dart';
@@ -41,6 +42,7 @@ class ServerScreen extends ConsumerWidget {
           ),
           child: ListView(
             children: [
+              const ServerManagerSection(),
               const ClientSection(),
               const AuthenticationSection(),
               if (!kIsWeb)
